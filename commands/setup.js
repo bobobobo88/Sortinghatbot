@@ -1,5 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const EmbedBuilderUtil = require('../utils/embedBuilder');
+const PermissionChecker = require('../utils/permissionChecker');
+const RoleManager = require('../utils/roleManager');
 const config = require('../config/config');
 
 module.exports = {
@@ -26,41 +28,27 @@ module.exports = {
             const title = interaction.options.getString('title');
             const description = interaction.options.getString('description');
 
-            // Check if user has permission to manage roles
-            if (!interaction.member.permissions.has(PermissionFlagsBits.ManageRoles)) {
+            // Validate permissions
+            const permissionCheck = PermissionChecker.validateRoleOperation(
+                interaction.member,
+                interaction.guild.members.me
+            );
+
+            if (!permissionCheck.success) {
                 return interaction.reply({
-                    content: 'You need the "Manage Roles" permission to use this command.',
+                    content: permissionCheck.message,
                     ephemeral: true
                 });
             }
 
-            // Check if bot has permission to manage roles
-            if (!interaction.guild.members.me.permissions.has(PermissionFlagsBits.ManageRoles)) {
-                return interaction.reply({
-                    content: 'I need the "Manage Roles" permission to manage role assignments.',
-                    ephemeral: true
-                });
-            }
-
-            // Update config with new values
-            const newConfig = {
-                channelId: channel.id
-            };
-
+            // Update configuration
+            const newConfig = { channelId: channel.id };
             if (title) newConfig.embedTitle = title;
             if (description) newConfig.embedDescription = description;
-
             config.updateConfig(newConfig);
 
-            // Create the embed and action rows
-            const embed = EmbedBuilderUtil.createRoleSelectionEmbed();
-            const actionRows = EmbedBuilderUtil.createActionRows();
-
-            // Send the message
-            const message = await channel.send({
-                embeds: [embed],
-                components: actionRows
-            });
+            // Create and send the message
+            const message = await this.createRoleSelectionMessage(channel);
 
             // Update config with message ID
             config.updateConfig({ messageId: message.id });
@@ -78,4 +66,19 @@ module.exports = {
             });
         }
     },
+
+    /**
+     * Creates the role selection message
+     * @param {TextChannel} channel - The channel to send the message in
+     * @returns {Promise<Message>} The created message
+     */
+    async createRoleSelectionMessage(channel) {
+        const embed = EmbedBuilderUtil.createRoleSelectionEmbed();
+        const actionRows = EmbedBuilderUtil.createActionRows();
+
+        return await channel.send({
+            embeds: [embed],
+            components: actionRows
+        });
+    }
 }; 

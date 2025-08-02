@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const EmbedBuilderUtil = require('../utils/embedBuilder');
+const PermissionChecker = require('../utils/permissionChecker');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -9,10 +10,12 @@ module.exports = {
 
     async execute(interaction) {
         try {
-            // Check if user has permission to manage roles
-            if (!interaction.member.permissions.has(PermissionFlagsBits.ManageRoles)) {
+            // Validate permissions
+            const permissionCheck = PermissionChecker.validateUserPermissions(interaction.member);
+
+            if (!permissionCheck.success) {
                 return interaction.reply({
-                    content: 'You need the "Manage Roles" permission to use this command.',
+                    content: permissionCheck.message,
                     ephemeral: true
                 });
             }
@@ -31,5 +34,5 @@ module.exports = {
                 ephemeral: true
             });
         }
-    },
+    }
 }; 

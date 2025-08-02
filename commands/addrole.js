@@ -1,5 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const EmbedBuilderUtil = require('../utils/embedBuilder');
+const PermissionChecker = require('../utils/permissionChecker');
+const RoleManager = require('../utils/roleManager');
 const config = require('../config/config');
 
 module.exports = {
@@ -26,18 +28,16 @@ module.exports = {
             const label = interaction.options.getString('label');
             const emoji = interaction.options.getString('emoji');
 
-            // Check if user has permission to manage roles
-            if (!interaction.member.permissions.has(PermissionFlagsBits.ManageRoles)) {
-                return interaction.reply({
-                    content: 'You need the "Manage Roles" permission to use this command.',
-                    ephemeral: true
-                });
-            }
+            // Validate permissions
+            const permissionCheck = PermissionChecker.validateRoleOperation(
+                interaction.member,
+                interaction.guild.members.me,
+                role
+            );
 
-            // Check if bot has permission to manage roles
-            if (!interaction.guild.members.me.permissions.has(PermissionFlagsBits.ManageRoles)) {
+            if (!permissionCheck.success) {
                 return interaction.reply({
-                    content: 'I need the "Manage Roles" permission to manage role assignments.',
+                    content: permissionCheck.message,
                     ephemeral: true
                 });
             }
@@ -54,34 +54,16 @@ module.exports = {
             config.addRole(role.id, label, emoji || '');
 
             // Update the existing message if it exists
-            const configData = config.getConfig();
-            if (configData.messageId && configData.channelId) {
-                try {
-                    const channel = await interaction.guild.channels.fetch(configData.channelId);
-                    const message = await channel.messages.fetch(configData.messageId);
+            const updateResult = await RoleManager.updateRoleMessage(interaction.guild);
 
-                    const embed = EmbedBuilderUtil.createRoleSelectionEmbed();
-                    const actionRows = EmbedBuilderUtil.createActionRows();
-
-                    await message.edit({
-                        embeds: [embed],
-                        components: actionRows
-                    });
-
-                    await interaction.reply({
-                        content: `Role ${role.name} has been added to the role selection message!`,
-                        ephemeral: true
-                    });
-                } catch (error) {
-                    console.error('Error updating message:', error);
-                    await interaction.reply({
-                        content: `Role ${role.name} has been added, but I couldn't update the existing message. Please run /setup to recreate it.`,
-                        ephemeral: true
-                    });
-                }
+            if (updateResult.success) {
+                await interaction.reply({
+                    content: `Role ${role.name} has been added to the role selection message!`,
+                    ephemeral: true
+                });
             } else {
                 await interaction.reply({
-                    content: `Role ${role.name} has been added! Run /setup to create the role selection message.`,
+                    content: `Role ${role.name} has been added, but I couldn't update the existing message. Please run /setup to recreate it.`,
                     ephemeral: true
                 });
             }
@@ -93,5 +75,5 @@ module.exports = {
                 ephemeral: true
             });
         }
-    },
+    }
 }; 

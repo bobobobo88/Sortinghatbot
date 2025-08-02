@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const CONSTANTS = require('../utils/constants');
 
 class Config {
     constructor() {
@@ -10,6 +11,9 @@ class Config {
         this.loadRoles();
     }
 
+    /**
+     * Ensures the data directory exists
+     */
     ensureDataDirectory() {
         const dataDir = path.join(__dirname, '../data');
         if (!fs.existsSync(dataDir)) {
@@ -17,32 +21,40 @@ class Config {
         }
     }
 
+    /**
+     * Loads configuration from file or creates default
+     */
     loadConfig() {
         try {
             if (fs.existsSync(this.configPath)) {
                 this.config = JSON.parse(fs.readFileSync(this.configPath, 'utf8'));
             } else {
-                this.config = {
-                    messageId: null,
-                    channelId: null,
-                    embedTitle: 'Select Your Vanity Roles!',
-                    embedDescription: 'Click the buttons below to assign yourself your desired roles. You can select or deselect roles at any time.',
-                    embedColor: 0x5865F2
-                };
+                this.config = this.getDefaultConfig();
                 this.saveConfig();
             }
         } catch (error) {
             console.error('Error loading config:', error);
-            this.config = {
-                messageId: null,
-                channelId: null,
-                embedTitle: 'Select Your Vanity Roles!',
-                embedDescription: 'Click the buttons below to assign yourself your desired roles. You can select or deselect roles at any time.',
-                embedColor: 0x5865F2
-            };
+            this.config = this.getDefaultConfig();
         }
     }
 
+    /**
+     * Gets default configuration
+     * @returns {Object} Default configuration
+     */
+    getDefaultConfig() {
+        return {
+            messageId: null,
+            channelId: null,
+            embedTitle: CONSTANTS.EMBED_DEFAULTS.TITLE,
+            embedDescription: CONSTANTS.EMBED_DEFAULTS.DESCRIPTION,
+            embedColor: CONSTANTS.COLORS.PRIMARY
+        };
+    }
+
+    /**
+     * Saves configuration to file
+     */
     saveConfig() {
         try {
             fs.writeFileSync(this.configPath, JSON.stringify(this.config, null, 2));
@@ -51,6 +63,9 @@ class Config {
         }
     }
 
+    /**
+     * Loads roles from file or creates empty object
+     */
     loadRoles() {
         try {
             if (fs.existsSync(this.rolesPath)) {
@@ -65,6 +80,9 @@ class Config {
         }
     }
 
+    /**
+     * Saves roles to file
+     */
     saveRoles() {
         try {
             fs.writeFileSync(this.rolesPath, JSON.stringify(this.roles, null, 2));
@@ -73,6 +91,7 @@ class Config {
         }
     }
 
+    // Configuration methods
     getConfig() {
         return this.config;
     }
@@ -82,6 +101,7 @@ class Config {
         this.saveConfig();
     }
 
+    // Role management methods
     getRoles() {
         return this.roles;
     }
@@ -102,6 +122,22 @@ class Config {
 
     hasRole(roleId) {
         return this.roles.hasOwnProperty(roleId);
+    }
+
+    /**
+     * Gets the number of configured roles
+     * @returns {number} Number of roles
+     */
+    getRoleCount() {
+        return Object.keys(this.roles).length;
+    }
+
+    /**
+     * Checks if any roles are configured
+     * @returns {boolean} True if roles exist
+     */
+    hasRoles() {
+        return this.getRoleCount() > 0;
     }
 }
 
