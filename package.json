@@ -1,0 +1,22 @@
+{
+  "name": "discord-role-adder-bot",
+  "version": "1.0.0",
+  "description": "A Discord bot for self-assigning vanity roles via interactive buttons",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "deploy-commands": "node deploy-commands.js",
+    "quick-start": "node quick-start.js"
+  },
+  "keywords": ["discord", "bot", "roles", "interactive"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+} 
